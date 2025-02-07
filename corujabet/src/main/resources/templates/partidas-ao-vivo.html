@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Partidas ao Vivo</title>
+    <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+    <script>
+        const connect = () => {
+            const socket = new SockJS('/ws-partidas');
+            const stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, () => {
+                stompClient.subscribe('/topic/live-matches', (message) => {
+                    const update = JSON.parse(message.body);
+                    updateMatchUI(update);
+                });
+            });
+        };
+
+        const updateMatchUI = (update) => {
+            const matchElement = document.getElementById(`match-${update.partidaId}`);
+            if (matchElement) {
+                matchElement.innerHTML = `
+                    <h3>Partida ${update.partidaId} - Placar: ${update.qntGolTimeDaCasa} x ${update.qntGolTimeDaFora}</h3>
+                    <p>Status: ${update.status}</p>
+                    <div id="events-${update.partidaId}"></div>
+                `;
+            }
+        };
+
+        window.onload = connect;
+    </script>
+</head>
+<body>
+<h1>Partidas ao Vivo</h1>
+<div th:each="match : ${matches}" th:id="'match-' + ${match.id}">
+    <h3 th:text="'Partida ' + ${match.id} + ' - ' + ${match.timeDaCasa.nome} + ' x ' + ${match.timeDeFora.nome}"></h3>
+    <p th:text="'Placar: ' + ${match.golsTimeDaCasa} + ' x ' + ${match.golsTimeDeFora}"></p>
+    <p th:text="'Status: ' + ${match.status}"></p>
+    <div th:id="'events-' + ${match.id}"></div>
+</div>
+</body>
+</html>
